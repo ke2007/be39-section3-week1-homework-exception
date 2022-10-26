@@ -1,5 +1,7 @@
 package com.codestates.response;
 
+import com.codestates.exception.BusinessLogicException;
+import com.codestates.exception.ExceptionCode;
 import lombok.Getter;
 import org.springframework.validation.BindingResult;
 
@@ -10,13 +12,20 @@ import java.util.stream.Collectors;
 
 @Getter
 public class ErrorResponse {
+
+    private int status;
+    private String message;
     private List<FieldError> fieldErrors;
     private List<ConstraintViolationError> violationErrors;
 
-    private ErrorResponse(final List<FieldError> fieldErrors,
-                          final List<ConstraintViolationError> violationErrors) {
+    public ErrorResponse(List<FieldError> fieldErrors, List<ConstraintViolationError> violationErrors) {
         this.fieldErrors = fieldErrors;
         this.violationErrors = violationErrors;
+    }
+
+    private ErrorResponse(int status, String message) {
+        this.status =status;
+        this.message =message;
     }
 
     public static ErrorResponse of(BindingResult bindingResult) {
@@ -27,11 +36,17 @@ public class ErrorResponse {
         return new ErrorResponse(null, ConstraintViolationError.of(violations));
     }
 
+    public static ErrorResponse of(ExceptionCode exceptionCode) {
+        return new ErrorResponse(exceptionCode.getStatus(), exceptionCode.getMessage());
+    }
+
+
     @Getter
     public static class FieldError {
         private String field;
         private Object rejectedValue;
         private String reason;
+
 
         private FieldError(String field, Object rejectedValue, String reason) {
             this.field = field;
@@ -58,15 +73,13 @@ public class ErrorResponse {
         private Object rejectedValue;
         private String reason;
 
-        private ConstraintViolationError(String propertyPath, Object rejectedValue,
-                                   String reason) {
+        private ConstraintViolationError(String propertyPath, Object rejectedValue, String reason) {
             this.propertyPath = propertyPath;
             this.rejectedValue = rejectedValue;
             this.reason = reason;
         }
 
-        public static List<ConstraintViolationError> of(
-                Set<ConstraintViolation<?>> constraintViolations) {
+        public static List<ConstraintViolationError> of(Set<ConstraintViolation<?>> constraintViolations) {
             return constraintViolations.stream()
                     .map(constraintViolation -> new ConstraintViolationError(
                             constraintViolation.getPropertyPath().toString(),
@@ -75,4 +88,7 @@ public class ErrorResponse {
                     )).collect(Collectors.toList());
         }
     }
+
+
+
 }
